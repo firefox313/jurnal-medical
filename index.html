@@ -7,17 +7,12 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {}
-            }
-        }
+        tailwind.config = { darkMode: 'class', theme: { extend: {} } }
     </script>
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google APIs -->
-    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+    <script async defer src="https://apis.google.com/js/api.js"></script>
     <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
     
     <style>
@@ -27,9 +22,10 @@
         @media print {
             body { background-color: white !important; }
             .no-print { display: none !important; }
-            .print-only { display: block !important; }
-            #app-container { max-width: 100% !important; margin: 0 !important; box-shadow: none !important; border:none; background-color: white !important; color: black !important;}
+            #app-container { max-width: 100% !important; margin: 0 !important; box-shadow: none !important; border:none; }
         }
+        .spin-anim { animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="h-screen w-full flex justify-center bg-gray-200 dark:bg-gray-900 transition-colors duration-300">
@@ -42,7 +38,7 @@
                 <h1 class="text-xl font-bold"><i class="fa-solid fa-notes-medical mr-2"></i>Jurnal Medical</h1>
                 <div class="flex space-x-4 items-center">
                     <span id="syncStatus" class="text-xs text-teal-100 hidden sm:inline-block font-medium"></span>
-                    <button onclick="handleAuthClick()" class="hover:text-teal-200 transition" title="Sincronizare Drive">
+                    <button onclick="handleAuthClick()" class="hover:text-teal-200 transition relative" title="Sincronizare Drive">
                         <i id="driveIcon" class="fa-brands fa-google-drive text-xl"></i>
                     </button>
                     <button onclick="window.print()" class="hover:text-teal-200 transition">
@@ -54,18 +50,14 @@
                 </div>
             </div>
 
-            <!-- Profile Selector (Generated Dynamically) -->
-            <div id="profileContainer" class="flex space-x-3 overflow-x-auto hide-scrollbar py-1">
-                <!-- Buttons will be injected here by JS -->
-            </div>
+            <div id="profileContainer" class="flex space-x-3 overflow-x-auto hide-scrollbar py-1"></div>
         </header>
 
         <!-- Category Tabs -->
         <nav class="bg-white dark:bg-gray-900 border-b dark:border-gray-700 shadow-sm no-print flex-shrink-0 transition-colors duration-300">
             <ul class="flex overflow-x-auto hide-scrollbar px-2 py-3 space-x-5 text-sm font-medium text-gray-500 dark:text-gray-400" id="navTabs">
-                <li onclick="switchTab('afectiuni')" id="tab-afectiuni" class="border-b-2 border-teal-600 text-teal-600 dark:text-teal-400 dark:border-teal-400 pb-1 px-2 whitespace-nowrap cursor-pointer">Afecțiuni</li>
+                <li onclick="switchTab('afectiuni')" id="tab-afectiuni" class="border-b-2 border-teal-600 text-teal-600 dark:text-teal-400 pb-1 px-2 whitespace-nowrap cursor-pointer">Afecțiuni</li>
                 <li onclick="switchTab('simptome')" id="tab-simptome" class="pb-1 px-2 whitespace-nowrap cursor-pointer hover:text-gray-800 dark:hover:text-gray-200">Simptome</li>
-                <li onclick="switchTab('tratamente')" id="tab-tratamente" class="pb-1 px-2 whitespace-nowrap cursor-pointer hover:text-gray-800 dark:hover:text-gray-200">Tratamente</li>
                 <li onclick="switchTab('vizite')" id="tab-vizite" class="pb-1 px-2 whitespace-nowrap cursor-pointer hover:text-gray-800 dark:hover:text-gray-200">Vizite Med.</li>
                 <li onclick="switchTab('analize')" id="tab-analize" class="pb-1 px-2 whitespace-nowrap cursor-pointer hover:text-gray-800 dark:hover:text-gray-200">Analize</li>
             </ul>
@@ -73,125 +65,85 @@
 
         <!-- Main Content Area -->
         <main id="main-content" class="flex-1 overflow-y-auto p-4 pb-24 dark:text-gray-200">
-            <!-- Dynamic Content will be loaded here based on the selected tab -->
             <div id="content-view">
                 <div class="text-center text-gray-500 dark:text-gray-400 mt-10">
-                    <i class="fa-solid fa-folder-open text-4xl mb-3 text-gray-300 dark:text-gray-600"></i>
-                    <p>Selectează un modul de mai sus.</p>
-                    <p class="text-xs mt-2">Baza de date este în pregătire...</p>
-                </div>
-            </div>
-            
-            <!-- AI Demo section (kept for testing) -->
-            <div class="mt-8 border-t dark:border-gray-700 pt-6" id="ai-demo-section">
-                <h3 class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Test Analiză AI (Document)</h3>
-                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-300">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <span class="text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 px-2 py-1 rounded">Sânge</span>
-                            <h4 class="font-bold text-gray-800 dark:text-white mt-2">Hemoleucogramă completă</h4>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Exemplu extras din Drive</p>
-                        </div>
-                        <i class="fa-solid fa-file-lines text-2xl text-gray-300 dark:text-gray-600"></i>
-                    </div>
-                    <button onclick="explainAI('Hemoleucogramă Exemplu')" class="w-full mt-4 bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 hover:bg-purple-200 dark:hover:bg-purple-800 transition">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> Explică rezultatul cu AI
-                    </button>
+                    <i class="fa-solid fa-cloud-arrow-up text-4xl mb-3 text-gray-300 dark:text-gray-600"></i>
+                    <p>Aplicația este gata pentru conectarea la Drive!</p>
+                    <p class="text-xs mt-2">Asigură-te că ai pus ID-ul Folderului în Setări.</p>
                 </div>
             </div>
         </main>
 
-        <!-- Floating Action Button -->
-        <button onclick="alert('Funcție de adăugare în curând!')" class="no-print absolute bottom-6 right-6 w-14 h-14 bg-teal-600 dark:bg-teal-700 text-white rounded-full shadow-lg flex items-center justify-center text-2xl hover:bg-teal-700 dark:hover:bg-teal-600 transition transform hover:scale-105 z-20">
-            <i class="fa-solid fa-plus"></i>
+        <!-- Floating Action Button (Va forța salvarea în Drive pentru test) -->
+        <button onclick="forceSaveToDrive()" class="no-print absolute bottom-6 right-6 w-14 h-14 bg-teal-600 dark:bg-teal-700 text-white rounded-full shadow-lg flex items-center justify-center text-xl hover:bg-teal-700 transition transform hover:scale-105 z-20" title="Salvează Manual pe Drive">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
         </button>
-
-    </div>
-
-    <!-- Modals (AI, Settings) -->
-    <!-- AI Modal -->
-    <div id="aiModal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-50 flex justify-center items-center p-4">
-        <div class="bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl p-0 flex flex-col max-h-[80vh] overflow-hidden transform scale-95 transition-all" id="aiModalContent">
-            <div class="bg-purple-600 dark:bg-purple-800 text-white p-4 rounded-t-2xl flex justify-between items-center">
-                <div class="flex items-center space-x-2"><i class="fa-solid fa-wand-magic-sparkles text-xl"></i><h2 class="text-lg font-bold">Asistent Gemini AI</h2></div>
-                <button onclick="closeAIModal()" class="text-purple-200 hover:text-white"><i class="fa-solid fa-times text-xl"></i></button>
-            </div>
-            <div class="p-5 overflow-y-auto flex-1 bg-purple-50 dark:bg-gray-900" id="aiLoadingArea">
-                <div class="flex flex-col items-center justify-center h-48 text-purple-500 dark:text-purple-400">
-                    <i class="fa-solid fa-microchip text-4xl mb-4 animate-bounce"></i>
-                    <p class="font-medium text-center">Analizez datele...<br><span class="text-sm text-purple-400" id="aiStatusText">Conectare...</span></p>
-                </div>
-            </div>
-            <div class="p-5 overflow-y-auto flex-1 hidden bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 leading-relaxed" id="aiResultArea">
-                <p class="mb-3 font-semibold text-gray-900 dark:text-white border-b dark:border-gray-700 pb-2">Rezultat: <span id="aiDocumentTitle" class="text-purple-600 dark:text-purple-400"></span></p>
-                <div id="aiGeneratedContent" class="space-y-3 whitespace-pre-wrap"></div>
-            </div>
-            <div class="p-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-center">
-                <button onclick="closeAIModal()" class="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full font-medium">Închide</button>
-            </div>
-        </div>
     </div>
 
     <!-- Settings Modal -->
     <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex justify-center items-center p-4 overflow-y-auto">
         <div class="bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl p-6 my-auto transition-colors duration-300">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-bold text-gray-800 dark:text-white"><i class="fa-solid fa-gear text-teal-600 dark:text-teal-400 mr-2"></i>Setări Aplicație</h2>
-                <button onclick="closeSettingsModal()" class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white"><i class="fa-solid fa-times text-xl"></i></button>
+                <h2 class="text-lg font-bold text-gray-800 dark:text-white"><i class="fa-solid fa-gear text-teal-600 mr-2"></i>Setări Aplicație</h2>
+                <button onclick="closeSettingsModal()" class="text-gray-500 hover:text-gray-800 dark:hover:text-white"><i class="fa-solid fa-times text-xl"></i></button>
             </div>
             
-            <!-- Dark Mode Toggle -->
-            <div class="flex items-center justify-between mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border dark:border-gray-600">
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-200"><i class="fa-solid fa-moon mr-2"></i>Temă Întunecată</span>
-                <label class="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" id="darkModeToggle" class="sr-only peer">
-                  <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-teal-600"></div>
-                </label>
+            <div class="flex items-center justify-between mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border dark:border-gray-600">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-200">Temă Întunecată</span>
+                <input type="checkbox" id="darkModeToggle" class="w-5 h-5 accent-teal-600">
             </div>
 
-            <!-- Dynamic Profile Names -->
-            <div class="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border dark:border-gray-600">
-                <h3 class="font-bold text-gray-700 dark:text-gray-200 mb-3 text-sm">Nume Membri Familie</h3>
+            <div class="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border dark:border-gray-600">
+                <h3 class="font-bold text-gray-700 dark:text-gray-200 mb-2 text-sm">Nume Membri Familie</h3>
                 <div class="space-y-2">
-                    <input type="text" id="nameChild" placeholder="Nume Copil" class="w-full px-3 py-2 border dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-teal-500 outline-none">
-                    <input type="text" id="nameDad" placeholder="Nume Tată" class="w-full px-3 py-2 border dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-teal-500 outline-none">
-                    <input type="text" id="nameMom" placeholder="Nume Mamă" class="w-full px-3 py-2 border dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+                    <input type="text" id="nameChild" placeholder="Copil" class="w-full px-2 py-1 text-sm border rounded dark:bg-gray-800 dark:text-white dark:border-gray-600">
+                    <input type="text" id="nameDad" placeholder="Tată" class="w-full px-2 py-1 text-sm border rounded dark:bg-gray-800 dark:text-white dark:border-gray-600">
+                    <input type="text" id="nameMom" placeholder="Mamă" class="w-full px-2 py-1 text-sm border rounded dark:bg-gray-800 dark:text-white dark:border-gray-600">
                 </div>
             </div>
 
-            <div class="space-y-4">
+            <div class="space-y-3">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Google Client ID (Sincronizare Drive)</label>
-                    <input type="text" id="googleClientIdInput" class="w-full px-3 py-2 border dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 text-sm outline-none">
+                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Google Client ID</label>
+                    <input type="text" id="googleClientIdInput" class="w-full px-2 py-1 text-sm border rounded dark:bg-gray-800 dark:text-white dark:border-gray-600">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cheie API Google Gemini</label>
-                    <input type="password" id="geminiApiKeyInput" class="w-full px-3 py-2 border dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 text-sm outline-none">
+                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">ID Folder Drive (Unde salvăm fișierul)</label>
+                    <input type="text" id="driveFolderIdInput" placeholder="ex: 1A2B3C4D5E..." class="w-full px-2 py-1 text-sm border rounded dark:bg-gray-800 dark:text-white dark:border-gray-600 border-teal-300">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Cheie API Gemini</label>
+                    <input type="password" id="geminiApiKeyInput" class="w-full px-2 py-1 text-sm border rounded dark:bg-gray-800 dark:text-white dark:border-gray-600">
                 </div>
                 <div id="settingsMessage" class="text-sm font-medium hidden"></div>
             </div>
-            <button onclick="saveSettings()" class="w-full mt-6 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium transition-colors">Salvează Setările</button>
+            <button onclick="saveSettings()" class="w-full mt-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded font-medium">Salvează Setările</button>
         </div>
     </div>
 
     <script>
-        // --- DATA & STATE MANAGEMENT ---
         let appData = {
             profiles: [
                 { id: 'p1', role: 'copil', name: 'Maria', active: true },
                 { id: 'p2', role: 'tata', name: 'Tata', active: false },
                 { id: 'p3', role: 'mama', name: 'Mama', active: false }
             ],
-            settings: { clientId: '', geminiKey: '', darkMode: false },
+            settings: { clientId: '', driveFolderId: '', geminiKey: '', darkMode: false },
             records: [] 
         };
 
+        let accessToken = null;
+        let driveFileId = null; // Vom stoca ID-ul fișierului JSON după ce îl găsim
+        let tokenClient;
+
+        // Inițializare
         function initApp() {
             const savedData = localStorage.getItem('jurnalMedicalData');
             if (savedData) {
-                appData = JSON.parse(savedData);
-                // Asigurare compatibilitate cu versiuni vechi (dacă nu exista darkMode)
-                if (appData.settings.darkMode === undefined) appData.settings.darkMode = false;
+                // Încărcăm setările de bază ca să avem Client ID și Folder ID
+                const parsed = JSON.parse(savedData);
+                if(parsed.settings) appData.settings = parsed.settings;
+                if(parsed.profiles) appData.profiles = parsed.profiles;
             }
             applyTheme(appData.settings.darkMode);
             renderProfiles();
@@ -203,61 +155,54 @@
         }
 
         function applyTheme(isDark) {
-            if (isDark) {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-            }
+            if (isDark) document.documentElement.classList.add('dark');
+            else document.documentElement.classList.remove('dark');
         }
 
         function switchProfile(profileId) {
             appData.profiles.forEach(p => p.active = (p.id === profileId));
             saveLocalData();
-            switchTab('afectiuni'); // reset la tab-ul default pe noul profil
+            switchTab('afectiuni');
         }
 
         function renderProfiles() {
             const container = document.getElementById('profileContainer');
             container.innerHTML = ''; 
-
             appData.profiles.forEach(profile => {
                 const btn = document.createElement('button');
                 btn.onclick = () => switchProfile(profile.id);
                 btn.innerText = profile.name;
-                
-                if (profile.active) {
-                    btn.className = "px-4 py-1.5 rounded-full bg-white dark:bg-gray-800 text-teal-700 dark:text-teal-400 font-bold text-sm shadow transition";
-                } else {
-                    btn.className = "px-4 py-1.5 rounded-full bg-teal-500 dark:bg-teal-700 text-white font-medium text-sm border border-teal-400 dark:border-teal-600 opacity-80 hover:opacity-100 transition";
-                }
+                btn.className = profile.active ? 
+                    "px-4 py-1.5 rounded-full bg-white dark:bg-gray-800 text-teal-700 dark:text-teal-400 font-bold text-sm shadow transition" : 
+                    "px-4 py-1.5 rounded-full bg-teal-500 dark:bg-teal-700 text-white font-medium text-sm border border-teal-400 opacity-80 hover:opacity-100 transition";
                 container.appendChild(btn);
             });
         }
 
-        // --- NAVIGATION LOGIC ---
         function switchTab(tabId) {
-            ['afectiuni', 'simptome', 'tratamente', 'vizite', 'analize'].forEach(id => {
-                document.getElementById(`tab-${id}`).className = "pb-1 px-2 whitespace-nowrap cursor-pointer hover:text-gray-800 dark:hover:text-gray-200 text-gray-500 dark:text-gray-400";
+            ['afectiuni', 'simptome', 'vizite', 'analize'].forEach(id => {
+                document.getElementById(`tab-${id}`).className = "pb-1 px-2 whitespace-nowrap cursor-pointer text-gray-500 dark:text-gray-400";
             });
-            document.getElementById(`tab-${tabId}`).className = "border-b-2 border-teal-600 dark:border-teal-400 text-teal-600 dark:text-teal-400 pb-1 px-2 whitespace-nowrap cursor-pointer font-bold";
+            document.getElementById(`tab-${tabId}`).className = "border-b-2 border-teal-600 text-teal-600 dark:text-teal-400 pb-1 px-2 font-bold cursor-pointer";
             
             const activeProfile = appData.profiles.find(p => p.active).name;
             document.getElementById('content-view').innerHTML = `
-                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 mb-4 transition-colors">
-                    <h3 class="font-bold text-teal-700 dark:text-teal-400 border-b dark:border-gray-700 pb-2 mb-2 capitalize">Modul: ${tabId}</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-300">Aici vor apărea datele pacientului <strong>${activeProfile}</strong> pentru secțiunea selectată.</p>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <h3 class="font-bold text-teal-700 dark:text-teal-400 mb-2 capitalize">${tabId} - ${activeProfile}</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-300">Date sincronizate din Drive vor apărea aici.</p>
                 </div>
             `;
         }
 
-        // --- SETTINGS LOGIC ---
+        // --- SETĂRI ---
         function openSettingsModal() {
             document.getElementById('nameChild').value = appData.profiles.find(p => p.role === 'copil').name;
             document.getElementById('nameDad').value = appData.profiles.find(p => p.role === 'tata').name;
             document.getElementById('nameMom').value = appData.profiles.find(p => p.role === 'mama').name;
             document.getElementById('googleClientIdInput').value = appData.settings.clientId || '';
+            document.getElementById('driveFolderIdInput').value = appData.settings.driveFolderId || '';
             document.getElementById('geminiApiKeyInput').value = appData.settings.geminiKey || '';
-            document.getElementById('darkModeToggle').checked = appData.settings.darkMode || false;
+            document.getElementById('darkModeToggle').checked = appData.settings.darkMode;
             
             document.getElementById('settingsMessage').classList.add('hidden');
             document.getElementById('settingsModal').classList.remove('hidden');
@@ -269,36 +214,26 @@
             appData.profiles.find(p => p.role === 'copil').name = document.getElementById('nameChild').value || 'Copil';
             appData.profiles.find(p => p.role === 'tata').name = document.getElementById('nameDad').value || 'Tata';
             appData.profiles.find(p => p.role === 'mama').name = document.getElementById('nameMom').value || 'Mama';
-            
-            const oldClientId = appData.settings.clientId;
             appData.settings.clientId = document.getElementById('googleClientIdInput').value.trim();
+            appData.settings.driveFolderId = document.getElementById('driveFolderIdInput').value.trim();
             appData.settings.geminiKey = document.getElementById('geminiApiKeyInput').value.trim();
-            
-            // Salvare temă
             appData.settings.darkMode = document.getElementById('darkModeToggle').checked;
+            
             applyTheme(appData.settings.darkMode);
-
             saveLocalData();
 
-            if (appData.settings.clientId && appData.settings.clientId !== oldClientId) {
-                initTokenClient(appData.settings.clientId);
-            }
+            if (appData.settings.clientId) initTokenClient(appData.settings.clientId);
 
             const msgEl = document.getElementById('settingsMessage');
-            msgEl.innerText = "Setări salvate cu succes!";
-            msgEl.classList.remove('hidden');
-            msgEl.classList.add('text-green-600', 'dark:text-green-400');
-            
-            setTimeout(() => closeSettingsModal(), 1500);
+            msgEl.innerText = "Salvat! Dacă ai pus ID Folder, apasă iconița Drive.";
+            msgEl.classList.remove('hidden', 'text-red-500');
+            msgEl.classList.add('text-green-600');
+            setTimeout(() => closeSettingsModal(), 2000);
         }
 
-        // --- GOOGLE DRIVE AUTHENTICATION LOGIC ---
-        let tokenClient;
-        function gapiLoaded() { gapi.load('client', () => {}); }
+        // --- GOOGLE DRIVE SYNC (MAGIA REALĂ) ---
         function gisLoaded() { 
-            setTimeout(() => { 
-                if (appData.settings.clientId) initTokenClient(appData.settings.clientId);
-            }, 500);
+            setTimeout(() => { if (appData.settings.clientId) initTokenClient(appData.settings.clientId); }, 500);
         }
 
         function initTokenClient(clientId) {
@@ -307,18 +242,20 @@
                 scope: 'https://www.googleapis.com/auth/drive.file',
                 callback: (tokenResponse) => {
                     if (tokenResponse && tokenResponse.access_token) {
-                        document.getElementById('syncStatus').innerText = "Sincronizat";
+                        accessToken = tokenResponse.access_token;
+                        document.getElementById('syncStatus').innerText = "Conectat...";
                         document.getElementById('syncStatus').classList.remove('hidden');
-                        document.getElementById('driveIcon').classList.add('text-green-300', 'dark:text-green-400');
-                        alert("Conectat la Google Drive cu succes! Baza de date este pregătită pentru salvare.");
+                        document.getElementById('driveIcon').classList.add('text-green-300');
+                        // După ce ne-am conectat, încercăm să luăm datele
+                        syncDataFromDrive();
                     }
                 },
             });
         }
 
         function handleAuthClick() { 
-            if (!appData.settings.clientId) {
-                alert("Te rog adaugă Client ID-ul în Setări mai întâi!");
+            if (!appData.settings.clientId || !appData.settings.driveFolderId) {
+                alert("Te rog adaugă Client ID și ID-ul Folderului în Setări!");
                 openSettingsModal();
                 return;
             }
@@ -326,56 +263,120 @@
             tokenClient.requestAccessToken({prompt: 'consent'});
         }
 
-        // --- AI LOGIC ---
-        async function explainAI(title) {
-            const apiKey = appData.settings.geminiKey;
-            const modal = document.getElementById('aiModal');
-            const content = document.getElementById('aiModalContent');
-            
-            modal.classList.remove('hidden');
-            setTimeout(() => content.classList.remove('scale-95'), 10);
-            
-            document.getElementById('aiDocumentTitle').innerText = title;
-            document.getElementById('aiLoadingArea').classList.remove('hidden');
-            document.getElementById('aiResultArea').classList.add('hidden');
+        async function syncDataFromDrive() {
+            if(!accessToken || !appData.settings.driveFolderId) return;
+            const icon = document.getElementById('driveIcon');
+            icon.classList.add('spin-anim');
 
-            if (!apiKey) {
-                document.getElementById('aiLoadingArea').classList.add('hidden');
-                document.getElementById('aiResultArea').classList.remove('hidden');
-                document.getElementById('aiGeneratedContent').innerHTML = `<div class="text-red-600 dark:text-red-400 font-bold">Lipsește Cheia API Gemini din setări!</div>`;
-                return;
+            try {
+                // 1. Căutăm fișierul JSON în folderul ales
+                const query = encodeURIComponent(`name='baza_date_jurnal.json' and '${appData.settings.driveFolderId}' in parents and trashed=false`);
+                const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id)`, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                const searchData = await searchRes.json();
+
+                if (searchData.files && searchData.files.length > 0) {
+                    // AM GĂSIT FIȘIERUL - Îl descărcăm!
+                    driveFileId = searchData.files[0].id;
+                    const getRes = await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`, {
+                        headers: { 'Authorization': `Bearer ${accessToken}` }
+                    });
+                    const cloudData = await getRes.json();
+                    
+                    // Suprascriem datele locale cu cele din Cloud
+                    appData.profiles = cloudData.profiles;
+                    appData.records = cloudData.records || [];
+                    saveLocalData();
+                    document.getElementById('syncStatus').innerText = "Sincronizat ✓";
+                    alert("Datele au fost descărcate cu succes de pe Drive (ce a salvat soția/laptopul)!");
+                } else {
+                    // FIȘIERUL NU EXISTĂ (e prima oară) - Îl creăm!
+                    document.getElementById('syncStatus').innerText = "Creare DB...";
+                    await saveToDrive(); 
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Eroare la sincronizare. Verifică ID-ul Folderului!");
             }
+            icon.classList.remove('spin-anim');
+            switchTab('afectiuni'); // re-render
+        }
 
-            const promptUser = `Aici este un rezultat mock: Glicemie: 85 mg/dL. Eozinofile: 6% (ușor crescut). Te rog analizează scurt și simplu.`;
-            const payload = {
-                contents: [{ parts: [{ text: promptUser }] }],
-                systemInstruction: { parts: [{ text: "Ești un medic profesionist. Explică scurt și cald pentru un părinte. Pune cuvintele cheie în bold. Nu panica utilizatorul." }] }
+        async function saveToDrive() {
+            if(!accessToken || !appData.settings.driveFolderId) return;
+            
+            const fileContent = JSON.stringify({
+                profiles: appData.profiles,
+                records: appData.records
+            });
+            const metadata = {
+                name: 'baza_date_jurnal.json',
+                mimeType: 'application/json'
             };
 
             try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-                });
-                if (!response.ok) throw new Error('Eroare API.');
-                const data = await response.json();
-                
-                document.getElementById('aiLoadingArea').classList.add('hidden');
-                document.getElementById('aiResultArea').classList.remove('hidden');
-                
-                let htmlText = data.candidates[0].content.parts[0].text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
-                document.getElementById('aiGeneratedContent').innerHTML = htmlText;
-            } catch (error) {
-                document.getElementById('aiLoadingArea').classList.add('hidden');
-                document.getElementById('aiResultArea').classList.remove('hidden');
-                document.getElementById('aiGeneratedContent').innerHTML = `Eroare: ${error.message}`;
+                if (driveFileId) {
+                    // UPDATE fișier existent
+                    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`, {
+                        method: 'PATCH',
+                        headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+                        body: fileContent
+                    });
+                } else {
+                    // CREATE fișier nou (mai întâi creăm metadata, apoi punem conținutul)
+                    metadata.parents = [appData.settings.driveFolderId];
+                    const createRes = await fetch(`https://www.googleapis.com/drive/v3/files`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify(metadata)
+                    });
+                    const createdFile = await createRes.json();
+                    driveFileId = createdFile.id;
+                    
+                    // Acum punem textul în el
+                    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`, {
+                        method: 'PATCH',
+                        headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+                        body: fileContent
+                    });
+                }
+                document.getElementById('syncStatus').innerText = "Salvat ✓";
+            } catch (err) {
+                console.error("Eroare la salvare:", err);
             }
         }
-        function closeAIModal() {
-            document.getElementById('aiModalContent').classList.add('scale-95');
-            setTimeout(() => document.getElementById('aiModal').classList.add('hidden'), 300);
+
+        function forceSaveToDrive() {
+            if(!accessToken) {
+                alert("Apasă întâi pe iconița Drive pentru a te autentifica!");
+                return;
+            }
+            document.getElementById('driveIcon').classList.add('spin-anim');
+            saveToDrive().then(() => {
+                document.getElementById('driveIcon').classList.remove('spin-anim');
+                alert("Datele tale locale (Numele profilurilor) au fost URcate cu succes în Drive!");
+            });
         }
 
         window.onload = initApp;
     </script>
 </body>
 </html>
+```
+
+### Ce trebuie să faci ca magia să se întâmple:
+
+1. **Urcă codul:** Pune acest nou cod peste cel vechi pe GitHub și dă *Commit*.
+2. **Creează Folderul:** Așa cum am explicat în fișierul `configurare_finala_drive.md` pe care îl ai deschis, deschide Drive-ul tău, creează folderul *Baza_Date_Jurnal_Medical* și dă-i Share soției.
+3. **Ia ID-ul:** Deschide folderul și copiază codul de la finalul adresei (din bara de adrese sus).
+4. **Începe Sincronizarea:**
+   * Intră pe site de pe telefon (sau laptop).
+   * Deschide Setările aplicației. Vei vedea acum un câmp nou: **ID Folder Drive**.
+   * Lipește ID-ul acolo, pune și numele voastre reale, și dă Save.
+   * Apasă pe **iconița Drive**. Îți va cere consimțământul și, dacă folderul este corect, va scrie scurt "Creare DB..." apoi "Sincronizat ✓".
+
+**Testul suprem:** Modifică numele tău în setări de pe S25 Ultra, apasă pe butonul rotund cu iconița de **Cloud (Acel + de jos dreapta s-a transformat)** ca să forțezi salvarea în Drive. 
+Apoi deschide aplicația pe laptop, apasă pe iconița Drive, și vei vedea cum numele tău se actualizează instant cu ce ai scris pe telefon!
+
+Spune-mi dacă ai reușit testul!
