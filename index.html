@@ -2,365 +2,266 @@
 <html lang="ro">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jurnal Medical Familie</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = { darkMode: 'class', theme: { extend: {} } }
-    </script>
-    <!-- FontAwesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google APIs -->
-    <script async defer src="https://apis.google.com/js/api.js"></script>
-    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
-    
+    <!-- Google Identity Services pentru autentificare Drive -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        @media print {
-            body { background-color: white !important; }
-            .no-print { display: none !important; }
-            #app-container { max-width: 100% !important; margin: 0 !important; box-shadow: none !important; border:none; }
+        :root {
+            --bg-color: #f4f7f6;
+            --text-color: #333;
+            --card-bg: #fff;
+            --primary-color: #00796b;
+            --secondary-color: #004d40;
+            --border-color: #ddd;
+            --danger-color: #d32f2f;
         }
-        .spin-anim { animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Tema Întunecată */
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --card-bg: #1e1e1e;
+            --primary-color: #80cbc4;
+            --secondary-color: #b2dfdb;
+            --border-color: #333;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-color); transition: 0.3s; }
+        
+        /* Header și Navigație */
+        header { background-color: var(--primary-color); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .header-icons { display: flex; gap: 15px; }
+        .header-icons svg { width: 24px; height: 24px; fill: white; cursor: pointer; }
+        .drive-status.synced { fill: #a5d6a7 !important; }
+
+        .profile-selector { display: flex; gap: 10px; padding: 15px; background: var(--secondary-color); overflow-x: auto; }
+        .profile-btn { padding: 8px 15px; border-radius: 20px; border: 1px solid white; background: transparent; color: white; cursor: pointer; white-space: nowrap; }
+        .profile-btn.active { background: white; color: var(--secondary-color); font-weight: bold; }
+
+        .tabs { display: flex; background: var(--card-bg); border-bottom: 1px solid var(--border-color); overflow-x: auto; }
+        .tab-btn { flex: 1; padding: 12px; border: none; background: transparent; cursor: pointer; color: var(--text-color); min-width: 100px; }
+        .tab-btn.active { border-bottom: 3px solid var(--primary-color); font-weight: bold; }
+
+        /* Conținut */
+        .content { padding: 15px; }
+        .card { background: var(--card-bg); padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 15px; border: 1px solid var(--border-color); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .status-badge { padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+        .status-active { background: #ffe0b2; color: #e65100; }
+        .status-resolved { background: #c8e6c9; color: #1b5e20; }
+
+        button.action-btn { background: var(--primary-color); color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; width: 100%; font-size: 16px; margin-top: 10px; }
+        button.action-btn:hover { opacity: 0.9; }
+
+        /* Modal (Pop-up) Setări */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: var(--card-bg); padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; }
+        .modal-content h3 { margin-bottom: 15px; }
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; margin-bottom: 5px; font-size: 14px; }
+        .input-group input { width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-color); color: var(--text-color); }
+        .close-modal { background: #aaa; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; float: right; margin-left: 10px;}
+        
+        .ai-result { background: #e3f2fd; color: #0d47a1; padding: 10px; border-radius: 5px; margin-top: 10px; font-size: 14px; display: none; }
+        [data-theme="dark"] .ai-result { background: #002147; color: #90caf9; }
     </style>
 </head>
-<body class="h-screen w-full flex justify-center bg-gray-200 dark:bg-gray-900 transition-colors duration-300">
+<body>
 
-    <div id="app-container" class="w-full max-w-md h-full bg-gray-50 dark:bg-gray-800 flex flex-col relative shadow-2xl overflow-hidden sm:border-x sm:border-gray-300 dark:sm:border-gray-700 transition-colors duration-300">
-        
-        <!-- Header -->
-        <header class="bg-teal-600 dark:bg-teal-800 text-white pt-10 pb-4 px-4 shadow-md z-10 no-print flex-shrink-0 transition-colors duration-300">
-            <div class="flex justify-between items-center mb-4">
-                <h1 class="text-xl font-bold"><i class="fa-solid fa-notes-medical mr-2"></i>Jurnal Medical</h1>
-                <div class="flex space-x-4 items-center">
-                    <span id="syncStatus" class="text-xs text-teal-100 hidden sm:inline-block font-medium"></span>
-                    <button onclick="handleAuthClick()" class="hover:text-teal-200 transition relative" title="Sincronizare Drive">
-                        <i id="driveIcon" class="fa-brands fa-google-drive text-xl"></i>
-                    </button>
-                    <button onclick="window.print()" class="hover:text-teal-200 transition">
-                        <i class="fa-solid fa-file-pdf text-xl"></i>
-                    </button>
-                    <button onclick="openSettingsModal()" class="hover:text-teal-200 transition">
-                        <i class="fa-solid fa-gear text-xl"></i>
-                    </button>
-                </div>
-            </div>
+    <header>
+        <h2>Jurnal Medical</h2>
+        <div class="header-icons">
+            <!-- Iconiță Google Drive -->
+            <svg id="drive-icon" onclick="conectareDrive()" viewBox="0 0 24 24"><path d="M7.71,3.5L1.15,15L4.58,21L11.13,9.5M9.73,15L6.3,21H19.42L22.85,15M22.28,14L15.72,2.5H8.85L15.41,14H22.28Z" /></svg>
+            <!-- Iconiță Setări -->
+            <svg onclick="deschideSetari()" viewBox="0 0 24 24"><path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z" /></svg>
+        </div>
+    </header>
 
-            <div id="profileContainer" class="flex space-x-3 overflow-x-auto hide-scrollbar py-1"></div>
-        </header>
-
-        <!-- Category Tabs -->
-        <nav class="bg-white dark:bg-gray-900 border-b dark:border-gray-700 shadow-sm no-print flex-shrink-0 transition-colors duration-300">
-            <ul class="flex overflow-x-auto hide-scrollbar px-2 py-3 space-x-5 text-sm font-medium text-gray-500 dark:text-gray-400" id="navTabs">
-                <li onclick="switchTab('afectiuni')" id="tab-afectiuni" class="border-b-2 border-teal-600 text-teal-600 dark:text-teal-400 pb-1 px-2 whitespace-nowrap cursor-pointer">Afecțiuni</li>
-                <li onclick="switchTab('simptome')" id="tab-simptome" class="pb-1 px-2 whitespace-nowrap cursor-pointer hover:text-gray-800 dark:hover:text-gray-200">Simptome</li>
-                <li onclick="switchTab('vizite')" id="tab-vizite" class="pb-1 px-2 whitespace-nowrap cursor-pointer hover:text-gray-800 dark:hover:text-gray-200">Vizite Med.</li>
-                <li onclick="switchTab('analize')" id="tab-analize" class="pb-1 px-2 whitespace-nowrap cursor-pointer hover:text-gray-800 dark:hover:text-gray-200">Analize</li>
-            </ul>
-        </nav>
-
-        <!-- Main Content Area -->
-        <main id="main-content" class="flex-1 overflow-y-auto p-4 pb-24 dark:text-gray-200">
-            <div id="content-view">
-                <div class="text-center text-gray-500 dark:text-gray-400 mt-10">
-                    <i class="fa-solid fa-cloud-arrow-up text-4xl mb-3 text-gray-300 dark:text-gray-600"></i>
-                    <p>Aplicația este gata pentru conectarea la Drive!</p>
-                    <p class="text-xs mt-2">Asigură-te că ai pus ID-ul Folderului în Setări.</p>
-                </div>
-            </div>
-        </main>
-
-        <!-- Floating Action Button (Va forța salvarea în Drive pentru test) -->
-        <button onclick="forceSaveToDrive()" class="no-print absolute bottom-6 right-6 w-14 h-14 bg-teal-600 dark:bg-teal-700 text-white rounded-full shadow-lg flex items-center justify-center text-xl hover:bg-teal-700 transition transform hover:scale-105 z-20" title="Salvează Manual pe Drive">
-            <i class="fa-solid fa-cloud-arrow-up"></i>
-        </button>
+    <div class="profile-selector" id="profile-selector">
+        <!-- Profilurile vor fi generate aici din JS -->
     </div>
 
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex justify-center items-center p-4 overflow-y-auto">
-        <div class="bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl p-6 my-auto transition-colors duration-300">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-bold text-gray-800 dark:text-white"><i class="fa-solid fa-gear text-teal-600 mr-2"></i>Setări Aplicație</h2>
-                <button onclick="closeSettingsModal()" class="text-gray-500 hover:text-gray-800 dark:hover:text-white"><i class="fa-solid fa-times text-xl"></i></button>
-            </div>
-            
-            <div class="flex items-center justify-between mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border dark:border-gray-600">
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-200">Temă Întunecată</span>
-                <input type="checkbox" id="darkModeToggle" class="w-5 h-5 accent-teal-600">
-            </div>
+    <div class="tabs">
+        <button class="tab-btn active" onclick="schimbaTab('afectiuni')">Afecțiuni</button>
+        <button class="tab-btn" onclick="schimbaTab('vizite')">Vizite Med.</button>
+        <button class="tab-btn" onclick="schimbaTab('analize')">Analize</button>
+    </div>
 
-            <div class="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border dark:border-gray-600">
-                <h3 class="font-bold text-gray-700 dark:text-gray-200 mb-2 text-sm">Nume Membri Familie</h3>
-                <div class="space-y-2">
-                    <input type="text" id="nameChild" placeholder="Copil" class="w-full px-2 py-1 text-sm border rounded dark:bg-gray-800 dark:text-white dark:border-gray-600">
-                    <input type="text" id="nameDad" placeholder="Tată" class="w-full px-2 py-1 text-sm border rounded dark:bg-gray-800 dark:text-white dark:border-gray-600">
-                    <input type="text" id="nameMom" placeholder="Mamă" class="w-full px-2 py-1 text-sm border rounded dark:bg-gray-800 dark:text-white dark:border-gray-600">
-                </div>
-            </div>
+    <div class="content" id="main-content">
+        <!-- Conținutul generat dinamic -->
+    </div>
 
-            <div class="space-y-3">
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Google Client ID</label>
-                    <input type="text" id="googleClientIdInput" class="w-full px-2 py-1 text-sm border rounded dark:bg-gray-800 dark:text-white dark:border-gray-600">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">ID Folder Drive (Unde salvăm fișierul)</label>
-                    <input type="text" id="driveFolderIdInput" placeholder="ex: 1A2B3C4D5E..." class="w-full px-2 py-1 text-sm border rounded dark:bg-gray-800 dark:text-white dark:border-gray-600 border-teal-300">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Cheie API Gemini</label>
-                    <input type="password" id="geminiApiKeyInput" class="w-full px-2 py-1 text-sm border rounded dark:bg-gray-800 dark:text-white dark:border-gray-600">
-                </div>
-                <div id="settingsMessage" class="text-sm font-medium hidden"></div>
+    <!-- Modal Setări -->
+    <div class="modal" id="modal-setari">
+        <div class="modal-content">
+            <h3>Setări Aplicație</h3>
+            <div class="input-group">
+                <label>Nume Membri (separate prin virgulă)</label>
+                <input type="text" id="setare-nume" value="Roxana, Ionuț, Soție">
             </div>
-            <button onclick="saveSettings()" class="w-full mt-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded font-medium">Salvează Setările</button>
+            <div class="input-group">
+                <label>Google Client ID</label>
+                <input type="text" id="setare-client-id" placeholder="12345...apps.googleusercontent.com">
+            </div>
+            <div class="input-group">
+                <label>ID Folder Drive</label>
+                <input type="text" id="setare-folder-id" placeholder="ID-ul folderului partajat">
+            </div>
+            <div class="input-group">
+                <label>Cheie API Gemini (AI)</label>
+                <input type="password" id="setare-gemini" placeholder="AI Studio Key">
+            </div>
+            <div class="input-group">
+                <label>
+                    <input type="checkbox" id="setare-dark-mode" onchange="toggleDarkMode()"> Tema Întunecată
+                </label>
+            </div>
+            <button class="action-btn" onclick="salveazaSetari()">Salvează Setările</button>
+            <button class="close-modal" onclick="inchideSetari()">Închide</button>
         </div>
     </div>
 
     <script>
+        // --- 1. STRUCTURA DE DATE ---
+        const DB_FILE_NAME = 'Baza_Date_Jurnal_Medical.json';
         let appData = {
-            profiles: [
-                { id: 'p1', role: 'copil', name: 'Maria', active: true },
-                { id: 'p2', role: 'tata', name: 'Tata', active: false },
-                { id: 'p3', role: 'mama', name: 'Mama', active: false }
-            ],
-            settings: { clientId: '', driveFolderId: '', geminiKey: '', darkMode: false },
-            records: [] 
+            membri: ["Roxana", "Ionuț", "Soție"],
+            profilActiv: "Roxana",
+            inregistrari: {
+                "Roxana": { afectiuni: [], vizite: [], analize: [] },
+                "Ionuț": { afectiuni: [], vizite: [], analize: [] },
+                "Soție": { afectiuni: [], vizite: [], analize: [] }
+            }
         };
 
-        let accessToken = null;
-        let driveFileId = null; // Vom stoca ID-ul fișierului JSON după ce îl găsim
+        let driveFileId = null;
         let tokenClient;
 
-        // Inițializare
-        function initApp() {
-            const savedData = localStorage.getItem('jurnalMedicalData');
-            if (savedData) {
-                // Încărcăm setările de bază ca să avem Client ID și Folder ID
-                const parsed = JSON.parse(savedData);
-                if(parsed.settings) appData.settings = parsed.settings;
-                if(parsed.profiles) appData.profiles = parsed.profiles;
-            }
-            applyTheme(appData.settings.darkMode);
-            renderProfiles();
-        }
+        // --- 2. GOOGLE DRIVE API LOGIC ---
+        function initGoogleAuth() {
+            const clientId = localStorage.getItem('google_client_id');
+            if (!clientId) return;
 
-        function saveLocalData() {
-            localStorage.setItem('jurnalMedicalData', JSON.stringify(appData));
-            renderProfiles();
-        }
-
-        function applyTheme(isDark) {
-            if (isDark) document.documentElement.classList.add('dark');
-            else document.documentElement.classList.remove('dark');
-        }
-
-        function switchProfile(profileId) {
-            appData.profiles.forEach(p => p.active = (p.id === profileId));
-            saveLocalData();
-            switchTab('afectiuni');
-        }
-
-        function renderProfiles() {
-            const container = document.getElementById('profileContainer');
-            container.innerHTML = ''; 
-            appData.profiles.forEach(profile => {
-                const btn = document.createElement('button');
-                btn.onclick = () => switchProfile(profile.id);
-                btn.innerText = profile.name;
-                btn.className = profile.active ? 
-                    "px-4 py-1.5 rounded-full bg-white dark:bg-gray-800 text-teal-700 dark:text-teal-400 font-bold text-sm shadow transition" : 
-                    "px-4 py-1.5 rounded-full bg-teal-500 dark:bg-teal-700 text-white font-medium text-sm border border-teal-400 opacity-80 hover:opacity-100 transition";
-                container.appendChild(btn);
-            });
-        }
-
-        function switchTab(tabId) {
-            ['afectiuni', 'simptome', 'vizite', 'analize'].forEach(id => {
-                document.getElementById(`tab-${id}`).className = "pb-1 px-2 whitespace-nowrap cursor-pointer text-gray-500 dark:text-gray-400";
-            });
-            document.getElementById(`tab-${tabId}`).className = "border-b-2 border-teal-600 text-teal-600 dark:text-teal-400 pb-1 px-2 font-bold cursor-pointer";
-            
-            const activeProfile = appData.profiles.find(p => p.active).name;
-            document.getElementById('content-view').innerHTML = `
-                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-                    <h3 class="font-bold text-teal-700 dark:text-teal-400 mb-2 capitalize">${tabId} - ${activeProfile}</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-300">Date sincronizate din Drive vor apărea aici.</p>
-                </div>
-            `;
-        }
-
-        // --- SETĂRI ---
-        function openSettingsModal() {
-            document.getElementById('nameChild').value = appData.profiles.find(p => p.role === 'copil').name;
-            document.getElementById('nameDad').value = appData.profiles.find(p => p.role === 'tata').name;
-            document.getElementById('nameMom').value = appData.profiles.find(p => p.role === 'mama').name;
-            document.getElementById('googleClientIdInput').value = appData.settings.clientId || '';
-            document.getElementById('driveFolderIdInput').value = appData.settings.driveFolderId || '';
-            document.getElementById('geminiApiKeyInput').value = appData.settings.geminiKey || '';
-            document.getElementById('darkModeToggle').checked = appData.settings.darkMode;
-            
-            document.getElementById('settingsMessage').classList.add('hidden');
-            document.getElementById('settingsModal').classList.remove('hidden');
-        }
-
-        function closeSettingsModal() { document.getElementById('settingsModal').classList.add('hidden'); }
-
-        function saveSettings() {
-            appData.profiles.find(p => p.role === 'copil').name = document.getElementById('nameChild').value || 'Copil';
-            appData.profiles.find(p => p.role === 'tata').name = document.getElementById('nameDad').value || 'Tata';
-            appData.profiles.find(p => p.role === 'mama').name = document.getElementById('nameMom').value || 'Mama';
-            appData.settings.clientId = document.getElementById('googleClientIdInput').value.trim();
-            appData.settings.driveFolderId = document.getElementById('driveFolderIdInput').value.trim();
-            appData.settings.geminiKey = document.getElementById('geminiApiKeyInput').value.trim();
-            appData.settings.darkMode = document.getElementById('darkModeToggle').checked;
-            
-            applyTheme(appData.settings.darkMode);
-            saveLocalData();
-
-            if (appData.settings.clientId) initTokenClient(appData.settings.clientId);
-
-            const msgEl = document.getElementById('settingsMessage');
-            msgEl.innerText = "Salvat! Dacă ai pus ID Folder, apasă iconița Drive.";
-            msgEl.classList.remove('hidden', 'text-red-500');
-            msgEl.classList.add('text-green-600');
-            setTimeout(() => closeSettingsModal(), 2000);
-        }
-
-        // --- GOOGLE DRIVE SYNC (MAGIA REALĂ) ---
-        function gisLoaded() { 
-            setTimeout(() => { if (appData.settings.clientId) initTokenClient(appData.settings.clientId); }, 500);
-        }
-
-        function initTokenClient(clientId) {
             tokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: clientId,
                 scope: 'https://www.googleapis.com/auth/drive.file',
                 callback: (tokenResponse) => {
                     if (tokenResponse && tokenResponse.access_token) {
-                        accessToken = tokenResponse.access_token;
-                        document.getElementById('syncStatus').innerText = "Conectat...";
-                        document.getElementById('syncStatus').classList.remove('hidden');
-                        document.getElementById('driveIcon').classList.add('text-green-300');
-                        // După ce ne-am conectat, încercăm să luăm datele
-                        syncDataFromDrive();
+                        localStorage.setItem('google_access_token', tokenResponse.access_token);
+                        document.getElementById('drive-icon').classList.add('synced');
+                        sincronizeazaDinDrive(); // Descărcăm datele imediat după logare
                     }
-                },
+                }
             });
         }
 
-        function handleAuthClick() { 
-            if (!appData.settings.clientId || !appData.settings.driveFolderId) {
-                alert("Te rog adaugă Client ID și ID-ul Folderului în Setări!");
-                openSettingsModal();
+        function conectareDrive() {
+            const clientId = localStorage.getItem('google_client_id');
+            const folderId = localStorage.getItem('drive_folder_id');
+            
+            if (!clientId || !folderId) {
+                alert("Te rog introdu Client ID-ul și ID-ul Folderului în Setări!");
+                deschideSetari();
                 return;
             }
-            if (!tokenClient) initTokenClient(appData.settings.clientId);
-            tokenClient.requestAccessToken({prompt: 'consent'});
+            if (!tokenClient) initGoogleAuth();
+            tokenClient.requestAccessToken();
         }
 
-        async function syncDataFromDrive() {
-            if(!accessToken || !appData.settings.driveFolderId) return;
-            const icon = document.getElementById('driveIcon');
-            icon.classList.add('spin-anim');
+        async function sincronizeazaDinDrive() {
+            const token = localStorage.getItem('google_access_token');
+            const folderId = localStorage.getItem('drive_folder_id');
+            if (!token || !folderId) return false;
 
             try {
-                // 1. Căutăm fișierul JSON în folderul ales
-                const query = encodeURIComponent(`name='baza_date_jurnal.json' and '${appData.settings.driveFolderId}' in parents and trashed=false`);
-                const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id)`, {
-                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                // Căutăm fișierul
+                const query = encodeURIComponent(`name='${DB_FILE_NAME}' and '${folderId}' in parents and trashed=false`);
+                const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}`, { headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const searchData = await searchRes.json();
 
                 if (searchData.files && searchData.files.length > 0) {
-                    // AM GĂSIT FIȘIERUL - Îl descărcăm!
                     driveFileId = searchData.files[0].id;
-                    const getRes = await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`, {
-                        headers: { 'Authorization': `Bearer ${accessToken}` }
+                    // Descărcăm conținutul
+                    const fileRes = await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`, { headers: { 'Authorization': `Bearer ${token}` }
                     });
-                    const cloudData = await getRes.json();
+                    const dbContent = await fileRes.json();
                     
-                    // Suprascriem datele locale cu cele din Cloud
-                    appData.profiles = cloudData.profiles;
-                    appData.records = cloudData.records || [];
-                    saveLocalData();
-                    document.getElementById('syncStatus').innerText = "Sincronizat ✓";
-                    alert("Datele au fost descărcate cu succes de pe Drive (ce a salvat soția/laptopul)!");
+                    appData = dbContent;
+                    localStorage.setItem('jurnal_medical_data', JSON.stringify(appData));
+                    incarcaInterfata();
+                    alert("Datele au fost descărcate din Drive cu succes!");
+                    return true;
                 } else {
-                    // FIȘIERUL NU EXISTĂ (e prima oară) - Îl creăm!
-                    document.getElementById('syncStatus').innerText = "Creare DB...";
-                    await saveToDrive(); 
+                    // Dacă nu există, îl creăm prima dată
+                    await incarcaInDrive(true);
+                    return true;
                 }
-            } catch (err) {
-                console.error(err);
-                alert("Eroare la sincronizare. Verifică ID-ul Folderului!");
+            } catch (e) {
+                console.error("Eroare la sincronizare:", e);
+                alert("Eroare la conectarea cu Drive. Jurnalul va rula local.");
+                return false;
             }
-            icon.classList.remove('spin-anim');
-            switchTab('afectiuni'); // re-render
         }
 
-        async function saveToDrive() {
-            if(!accessToken || !appData.settings.driveFolderId) return;
+        async function incarcaInDrive(isNew = false) {
+            const token = localStorage.getItem('google_access_token');
+            const folderId = localStorage.getItem('drive_folder_id');
+            if (!token || !folderId) return;
+
+            const fileMetadata = { name: DB_FILE_NAME };
+            if (isNew) fileMetadata.parents = [folderId]; // Adăugăm parent doar la creare
             
-            const fileContent = JSON.stringify({
-                profiles: appData.profiles,
-                records: appData.records
-            });
-            const metadata = {
-                name: 'baza_date_jurnal.json',
-                mimeType: 'application/json'
-            };
+            const fileContent = new Blob([JSON.stringify(appData)], { type: 'application/json' });
+            let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+            let method = 'POST';
 
-            try {
-                if (driveFileId) {
-                    // UPDATE fișier existent
-                    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`, {
-                        method: 'PATCH',
-                        headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-                        body: fileContent
-                    });
-                } else {
-                    // CREATE fișier nou (mai întâi creăm metadata, apoi punem conținutul)
-                    metadata.parents = [appData.settings.driveFolderId];
-                    const createRes = await fetch(`https://www.googleapis.com/drive/v3/files`, {
-                        method: 'POST',
-                        headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-                        body: JSON.stringify(metadata)
-                    });
-                    const createdFile = await createRes.json();
-                    driveFileId = createdFile.id;
-                    
-                    // Acum punem textul în el
-                    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`, {
-                        method: 'PATCH',
-                        headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-                        body: fileContent
-                    });
-                }
-                document.getElementById('syncStatus').innerText = "Salvat ✓";
-            } catch (err) {
-                console.error("Eroare la salvare:", err);
+            if (!isNew && driveFileId) {
+                url = `https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=multipart`; method = 'PATCH'; }  const form = new FormData(); form.append('metadata', new Blob([JSON.stringify(fileMetadata)], { type: 'application/json' })); form.append('file', fileContent);  try { const res = await fetch(url, { method: method, headers: { 'Authorization': `Bearer ${token}` },
+                    body: form
+                });
+                const data = await res.json();
+                if (isNew) driveFileId = data.id;
+            } catch (e) {
+                console.error("Eroare la salvare în Drive:", e);
             }
         }
 
-        function forceSaveToDrive() {
-            if(!accessToken) {
-                alert("Apasă întâi pe iconița Drive pentru a te autentifica!");
-                return;
+        // --- 3. LOGICA LOCALĂ ---
+        function salveazaLocal() {
+            localStorage.setItem('jurnal_medical_data', JSON.stringify(appData));
+            // De fiecare dată când salvăm local (ex: adăugăm o afecțiune), trimitem și în Drive dacă suntem logați
+            if (localStorage.getItem('google_access_token')) {
+                incarcaInDrive();
             }
-            document.getElementById('driveIcon').classList.add('spin-anim');
-            saveToDrive().then(() => {
-                document.getElementById('driveIcon').classList.remove('spin-anim');
-                alert("Datele tale locale (Numele profilurilor) au fost URcate cu succes în Drive!");
-            });
         }
 
-        window.onload = initApp;
-    </script>
-</body>
-</html>
-```
+        function incarcaLocal() {
+            const dateSalvate = localStorage.getItem('jurnal_medical_data');
+            if (dateSalvate) {
+                appData = JSON.parse(dateSalvate);
+            } else {
+                // Punem niște date de test la prima rulare absolută
+                appData.inregistrari["Roxana"].afectiuni.push({
+                    id: Date.now(),
+                    nume: "Răceală sezonieră",
+                    status: "activ",
+                    dataStart: "2026-10-25"
+                });
+                salveazaLocal();
+            }
+            aplicaTema();
+            incarcaInterfata();
+        }
+
+        // --- 4. INTERFAȚĂ ȘI SETĂRI ---
+        function incarcaInterfata() {
+            // Generare butoane profil
+            const profSelector = document.getElementById('profile-selector');
+            profSelector.innerHTML = '';
+            appData.membri.forEach(membru => {
+                const btn = document.createElement('button');
+                btn.className = `profile-btn
