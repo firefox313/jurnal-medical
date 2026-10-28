@@ -179,14 +179,16 @@
             try {
                 // Căutăm fișierul
                 const query = encodeURIComponent(`name='${DB_FILE_NAME}' and '${folderId}' in parents and trashed=false`);
-                const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}`, { headers: { 'Authorization': `Bearer ${token}` }
+                const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const searchData = await searchRes.json();
 
                 if (searchData.files && searchData.files.length > 0) {
                     driveFileId = searchData.files[0].id;
                     // Descărcăm conținutul
-                    const fileRes = await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`, { headers: { 'Authorization': `Bearer ${token}` }
+                    const fileRes = await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
                     });
                     const dbContent = await fileRes.json();
                     
@@ -220,7 +222,18 @@
             let method = 'POST';
 
             if (!isNew && driveFileId) {
-                url = `https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=multipart`; method = 'PATCH'; }  const form = new FormData(); form.append('metadata', new Blob([JSON.stringify(fileMetadata)], { type: 'application/json' })); form.append('file', fileContent);  try { const res = await fetch(url, { method: method, headers: { 'Authorization': `Bearer ${token}` },
+                url = `https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=multipart`;
+                method = 'PATCH';
+            }
+
+            const form = new FormData();
+            form.append('metadata', new Blob([JSON.stringify(fileMetadata)], { type: 'application/json' }));
+            form.append('file', fileContent);
+
+            try {
+                const res = await fetch(url, {
+                    method: method,
+                    headers: { 'Authorization': `Bearer ${token}` },
                     body: form
                 });
                 const data = await res.json();
@@ -264,4 +277,105 @@
             profSelector.innerHTML = '';
             appData.membri.forEach(membru => {
                 const btn = document.createElement('button');
-                btn.className = `profile-btn
+                btn.className = `profile-btn ${membru === appData.profilActiv ? 'active' : ''}`;
+                btn.innerText = membru;
+                btn.onclick = () => { appData.profilActiv = membru; salveazaLocal(); incarcaInterfata(); schimbaTab('afectiuni'); };
+                profSelector.appendChild(btn);
+            });
+            schimbaTab('afectiuni'); // Default tab
+        }
+
+        function schimbaTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            
+            const content = document.getElementById('main-content');
+            const persoana = appData.inregistrari[appData.profilActiv];
+
+            if(tab === 'afectiuni') {
+                let html = `<h3>Afecțiuni - ${appData.profilActiv}</h3>`;
+                if(persoana.afectiuni.length === 0) html += `<p>Nicio afecțiune înregistrată.</p>`;
+                persoana.afectiuni.forEach(af => {
+                    html += `
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>${af.nume}</h4>
+                            <span class="status-badge ${af.status === 'activ' ? 'status-active' : 'status-resolved'}">${af.status.toUpperCase()}</span>
+                        </div>
+                        <p><strong>De la:</strong> ${af.dataStart}</p>
+                    </div>`;
+                });
+                html += `<button class="action-btn" onclick="adaugaAfectiuneTest()">+ Adaugă Afecțiune</button>`;
+                content.innerHTML = html;
+            } else {
+                content.innerHTML = `<h3>Secțiune în lucru...</h3><p>Aici vom implementa logica pentru ${tab}.</p>`;
+            }
+        }
+
+        function adaugaAfectiuneTest() {
+            appData.inregistrari[appData.profilActiv].afectiuni.push({
+                id: Date.now(),
+                nume: "Simptom Test",
+                status: "activ",
+                dataStart: new Date().toISOString().split('T')[0]
+            });
+            salveazaLocal();
+            schimbaTab('afectiuni');
+        }
+
+        // Modal Setări
+        function deschideSetari() {
+            document.getElementById('setare-nume').value = appData.membri.join(', ');
+            document.getElementById('setare-client-id').value = localStorage.getItem('google_client_id') || '';
+            document.getElementById('setare-folder-id').value = localStorage.getItem('drive_folder_id') || '';
+            document.getElementById('setare-gemini').value = localStorage.getItem('gemini_api_key') || '';
+            document.getElementById('setare-dark-mode').checked = localStorage.getItem('dark_mode') === 'true';
+            document.getElementById('modal-setari').style.display = 'flex';
+        }
+
+        function inchideSetari() {
+            document.getElementById('modal-setari').style.display = 'none';
+        }
+
+        function salveazaSetari() {
+            const numeNoi = document.getElementById('setare-nume').value.split(',').map(n => n.trim());
+            appData.membri = numeNoi;
+            if(!appData.membri.includes(appData.profilActiv)) appData.profilActiv = appData.membri[0];
+            
+            // Asigurăm structura pentru toți membrii
+            appData.membri.forEach(m => {
+                if(!appData.inregistrari[m]) appData.inregistrari[m] = { afectiuni: [], vizite: [], analize: [] };
+            });
+
+            localStorage.setItem('google_client_id', document.getElementById('setare-client-id').value.trim());
+            localStorage.setItem('drive_folder_id', document.getElementById('setare-folder-id').value.trim());
+            localStorage.setItem('gemini_api_key', document.getElementById('setare-gemini').value.trim());
+            
+            salveazaLocal();
+            initGoogleAuth(); // Reinițializăm auth în caz că s-a schimbat ID-ul
+            inchideSetari();
+            incarcaInterfata();
+        }
+
+        function toggleDarkMode() {
+            const isDark = document.getElementById('setare-dark-mode').checked;
+            localStorage.setItem('dark_mode', isDark);
+            aplicaTema();
+        }
+
+        function aplicaTema() {
+            if (localStorage.getItem('dark_mode') === 'true') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+        }
+
+        // --- INIT ---
+        window.onload = () => {
+            incarcaLocal();
+            setTimeout(initGoogleAuth, 1000); // Lăsăm scriptul Google să se încarce
+        };
+    </script>
+</body>
+</html>
