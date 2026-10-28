@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Jurnal Medical Familie</title>
+    <!-- Tailwind CSS for Styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Drive & Identity API -->
+    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+    
+    <style>
+        /* Custom Styles for App-like feel */
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f3f4f6; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Print Styles for PDF Export */
+        @media print {
+            body { background-color: white; }
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            .card { box-shadow: none !important; border-bottom: 1px solid #e5e7eb; border-radius: 0; margin-bottom: 1rem; padding: 0 !important; }
+            #app-container { max-width: 100% !important; margin: 0 !important; box-shadow: none !important; }
+        }
+    </style>
+</head>
+<body class="h-screen w-full flex justify-center bg-gray-200">
+
+    <!-- App Container -->
+    <div id="app-container" class="w-full max-w-md h-full bg-gray-50 flex flex-col relative shadow-2xl overflow-hidden sm:border-x sm:border-gray-300">
+        
+        <!-- Header -->
+        <header class="bg-teal-600 text-white pt-10 pb-4 px-4 shadow-md z-10 no-print flex-shrink-0">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-xl font-bold"><i class="fa-solid fa-notes-medical mr-2"></i>Jurnal Medical</h1>
+                <div class="flex space-x-4 items-center">
+                    <span id="syncStatus" class="text-xs text-teal-100 hidden sm:inline-block font-medium"></span>
+                    <button onclick="handleAuthClick()" class="hover:text-teal-200 transition" title="Sincronizare cu Google Drive">
+                        <i id="driveIcon" class="fa-brands fa-google-drive text-xl"></i>
+                    </button>
+                    <button onclick="window.print()" class="hover:text-teal-200 transition" title="Exportă PDF pentru Medic">
+                        <i class="fa-solid fa-file-pdf text-xl"></i>
+                    </button>
+                    <button onclick="openSettingsModal()" class="hover:text-teal-200 transition" title="Setări">
+                        <i class="fa-solid fa-gear text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Profile Selector -->
+            <div class="flex space-x-3 overflow-x-auto hide-scrollbar py-1">
+                <button class="px-4 py-1.5 rounded-full bg-white text-teal-700 font-bold text-sm shadow">Maria (Fetiță)</button>
+                <button class="px-4 py-1.5 rounded-full bg-teal-500 text-white font-medium text-sm border border-teal-400">Tata</button>
+                <button class="px-4 py-1.5 rounded-full bg-teal-500 text-white font-medium text-sm border border-teal-400">Mama</button>
+            </div>
+        </header>
+
+        <!-- Category Tabs -->
+        <nav class="bg-white border-b shadow-sm no-print flex-shrink-0">
+            <ul class="flex overflow-x-auto hide-scrollbar px-2 py-3 space-x-6 text-sm font-medium text-gray-500">
+                <li class="border-b-2 border-teal-600 text-teal-600 pb-1 px-2 whitespace-nowrap cursor-pointer">Afecțiuni & Istoric</li>
+                <li class="pb-1 px-2 whitespace-nowrap cursor-pointer hover:text-gray-800">Analize</li>
+                <li class="pb-1 px-2 whitespace-nowrap cursor-pointer hover:text-gray-800">Vaccinuri</li>
+            </ul>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main id="main-content" class="flex-1 overflow-y-auto p-4 pb-24">
+            
+            <div class="mb-4">
+                <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Analize Recente (Exemplu AI)</h3>
+                
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 card mb-3">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="text-xs font-semibold bg-blue-100 text-blue-700 px-2 py-1 rounded">Sânge</span>
+                            <h4 class="font-bold text-gray-800 mt-2">Hemoleucogramă completă</h4>
+                            <p class="text-xs text-gray-500 mt-1">12 Mai 2024 • Clinica Regina Maria</p>
+                        </div>
+                        <i class="fa-solid fa-file-lines text-2xl text-gray-300"></i>
+                    </div>
+                    <div class="mt-4 flex space-x-2">
+                        <button onclick="explainAI('Hemoleucogramă - 12 Mai 2024')" class="flex-1 bg-purple-100 text-purple-700 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 hover:bg-purple-200 transition">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Explică AI
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+        </main>
+
+        <!-- Floating Action Button -->
+        <button onclick="openModal()" class="no-print absolute bottom-6 right-6 w-14 h-14 bg-teal-600 text-white rounded-full shadow-lg flex items-center justify-center text-2xl hover:bg-teal-700 transition transform hover:scale-105 z-20">
+            <i class="fa-solid fa-plus"></i>
+        </button>
+        
+        <!-- Print Header -->
+        <div class="hidden print-only p-4 mb-4 border-b-2 border-teal-600">
+            <h1 class="text-2xl font-bold text-gray-800">Dosar Medical - Maria</h1>
+            <p class="text-gray-500">Generat la data: <script>document.write(new Date().toLocaleDateString('ro-RO'))</script></p>
+        </div>
+
+    </div>
+
+    <!-- AI Analysis Modal -->
+    <div id="aiModal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-50 flex justify-center items-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl p-0 flex flex-col max-h-[80vh] overflow-hidden transform scale-95 transition-transform" id="aiModalContent">
+            
+            <div class="bg-purple-600 text-white p-4 rounded-t-2xl flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-wand-magic-sparkles text-xl"></i>
+                    <h2 class="text-lg font-bold">Asistent Gemini AI</h2>
+                </div>
+                <button onclick="closeAIModal()" class="text-purple-200 hover:text-white"><i class="fa-solid fa-times text-xl"></i></button>
+            </div>
+
+            <div class="p-5 overflow-y-auto flex-1 bg-purple-50" id="aiLoadingArea">
+                <div class="flex flex-col items-center justify-center h-48 text-purple-500">
+                    <i class="fa-solid fa-microchip text-4xl mb-4 animate-bounce"></i>
+                    <p class="font-medium text-center">Analizez datele cu Gemini...<br><span class="text-sm text-purple-400" id="aiStatusText">Conectare...</span></p>
+                </div>
+            </div>
+
+            <div class="p-5 overflow-y-auto flex-1 hidden bg-white text-sm text-gray-700 leading-relaxed" id="aiResultArea">
+                <p class="mb-3 font-semibold text-gray-900 border-b pb-2">Rezultat analiză: <span id="aiDocumentTitle" class="text-purple-600"></span></p>
+                <div id="aiGeneratedContent" class="space-y-3 whitespace-pre-wrap"></div>
+            </div>
+            
+            <div class="p-4 border-t bg-gray-50 text-center">
+                <button onclick="closeAIModal()" class="px-6 py-2 bg-gray-200 text-gray-800 rounded-full font-medium hover:bg-gray-300">Închide</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex justify-center items-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-gear text-teal-600 mr-2"></i>Setări Aplicație</h2>
+                <button onclick="closeSettingsModal()" class="text-gray-500 hover:text-gray-800"><i class="fa-solid fa-times text-xl"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Google Client ID (Sincronizare Drive)</label>
+                    <input type="text" id="googleClientIdInput" placeholder="ex: 123456-abc.apps.googleusercontent.com" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Cheie API Google Gemini</label>
+                    <input type="password" id="geminiApiKeyInput" placeholder="ex: AIzaSyB..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+                </div>
+                <div id="settingsMessage" class="text-sm font-medium hidden"></div>
+            </div>
+            <button onclick="saveSettings()" class="w-full mt-6 py-3 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700">Salvează Setările</button>
+        </div>
+    </div>
+
+    <!-- Add Modal -->
+    <div id="addModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex justify-center items-end sm:items-center">
+        <div class="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl p-6 transform transition-transform translate-y-full sm:translate-y-0" id="modalContent">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold text-gray-800">Adaugă...</h2>
+                <button onclick="closeModal()" class="text-gray-500 hover:text-gray-800"><i class="fa-solid fa-times text-xl"></i></button>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <button class="bg-teal-50 text-teal-700 p-3 rounded-lg border border-teal-200 flex flex-col items-center justify-center gap-2">
+                    <i class="fa-solid fa-stethoscope text-xl"></i><span>Vizită Medic</span>
+                </button>
+                <button class="bg-blue-50 text-blue-700 p-3 rounded-lg border border-blue-200 flex flex-col items-center justify-center gap-2">
+                    <i class="fa-solid fa-flask text-xl"></i><span>Analize</span>
+                </button>
+            </div>
+            <button onclick="closeModal()" class="w-full mt-6 py-3 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300">Anulează</button>
+        </div>
+    </div>
+
+    <script>
+        // --- GOOGLE DRIVE AUTHENTICATION LOGIC ---
+        let tokenClient;
+        let accessToken = null;
+        let gapiInited = false;
+        
+        function gapiLoaded() { 
+            gapi.load('client', () => { gapiInited = true; }); 
+        }
+        
+        function gisLoaded() { 
+            const savedClientId = localStorage.getItem('googleClientId');
+            if (savedClientId) {
+                initTokenClient(savedClientId);
+            }
+        }
+
+        function initTokenClient(clientId) {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: clientId,
+                // Cerem permisiunea doar pentru fișierele create de această aplicație
+                scope: 'https://www.googleapis.com/auth/drive.file',
+                callback: (tokenResponse) => {
+                    if (tokenResponse && tokenResponse.access_token) {
+                        accessToken = tokenResponse.access_token;
+                        document.getElementById('syncStatus').innerText = "Sincronizat";
+                        document.getElementById('syncStatus').classList.remove('hidden');
+                        document.getElementById('driveIcon').classList.add('text-green-300');
+                        alert("Autentificare reușită! Jurnalul este conectat la Google Drive-ul tău.");
+                    }
+                },
+            });
+        }
+
+        function handleAuthClick() { 
+            const clientId = localStorage.getItem('googleClientId');
+            if (!clientId) {
+                alert("Te rog adaugă Client ID-ul în meniul de Setări (roata dințată) mai întâi!");
+                openSettingsModal();
+                return;
+            }
+            if (!tokenClient) {
+                initTokenClient(clientId);
+            }
+            // Deschide fereastra oficială Google de Login
+            tokenClient.requestAccessToken({prompt: 'consent'});
+        }
+
+        // --- MOCK DATA ---
+        let mockData = {
+            profiles: [
+                { id: 1, name: "Maria (Fetiță)" }
+            ],
+            records: [
+                { id: 1, type: "analiza", title: "Hemoleucogramă", date: "2024-05-12" }
+            ]
+        };
+
+        // --- AI LOGIC ---
+        async function explainAI(title) {
+            const apiKey = localStorage.getItem('geminiApiKey');
+            const modal = document.getElementById('aiModal');
+            const content = document.getElementById('aiModalContent');
+            const resultArea = document.getElementById('aiResultArea');
+            const loadingArea = document.getElementById('aiLoadingArea');
+            const generatedContent = document.getElementById('aiGeneratedContent');
+            const documentTitle = document.getElementById('aiDocumentTitle');
+            const statusText = document.getElementById('aiStatusText');
+
+            modal.classList.remove('hidden');
+            setTimeout(() => content.classList.remove('scale-95'), 10);
+            
+            documentTitle.innerText = title;
+            loadingArea.classList.remove('hidden');
+            resultArea.classList.add('hidden');
+
+            if (!apiKey) {
+                loadingArea.classList.add('hidden');
+                resultArea.classList.remove('hidden');
+                generatedContent.innerHTML = `
+                    <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded text-red-700">
+                        <p class="font-bold mb-1"><i class="fa-solid fa-circle-exclamation mr-2"></i>Lipsește Cheia API</p>
+                        <p>Pentru a folosi analiza AI, te rog să introduci cheia Gemini API în setările aplicației (roata dințată din dreapta sus).</p>
+                    </div>
+                `;
+                return;
+            }
+
+            statusText.innerText = "Trimit datele către Gemini...";
+
+            const dateMockExtrase = "Glicemie: 85 mg/dL. Fier seric: 45 µg/dL (limită inferioară 50). Eozinofile: 6% (ușor crescut). Leucocite: 7.5 mii/uL (normal). Eritrocite: 4.8 mil/uL (normal).";
+            
+            // Promptul avansat pe care l-am discutat, cu contextul părinților
+            const promptUser = `Aici sunt rezultatele analizelor extrase din documentul "${title}" pentru un pacient (copil, 8 ani). \nContext Ereditar: Mama are un istoric ușor de anemie. \n\nRezultate extrase:\n${dateMockExtrase}\n\nTe rog analizează-le conform instrucțiunilor tale.`;
+
+            const payload = {
+                contents: [{ parts: [{ text: promptUser }] }],
+                systemInstruction: {
+                    parts: [{ text: "Ești un medic profesionist, experimentat, cu o atitudine caldă, calmă și empatică. Rolul tău este să explici rapoarte medicale și analize pentru un părinte. Când analizezi datele unui copil, ia în calcul posibilele riscuri ereditare (dacă sunt furnizate). Folosește un limbaj clar și accesibil. Nu induce panică gratuită, dar semnalează aspectele ce necesită atenție. Scopul tău este să informezi corect și să pregătești părintele pentru discuția cu medicul, nu să pui diagnostice finale." }]
+                }
+            };
+
+            try {
+                // Modificat la modelul recomandat stabil
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error('Eroare de la serverul Google. Verifică cheia API.');
+
+                const data = await response.json();
+                const aiTextResponse = data.candidates[0].content.parts[0].text;
+                
+                loadingArea.classList.add('hidden');
+                resultArea.classList.remove('hidden');
+                
+                const formattedText = aiTextResponse.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                generatedContent.innerHTML = formattedText;
+
+            } catch (error) {
+                loadingArea.classList.add('hidden');
+                resultArea.classList.remove('hidden');
+                generatedContent.innerHTML = `<div class="bg-red-50 p-4 rounded text-red-700"><p><strong>Eroare:</strong> ${error.message}</p></div>`;
+            }
+        }
+
+        function closeAIModal() {
+            const modal = document.getElementById('aiModal');
+            const content = document.getElementById('aiModalContent');
+            content.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        // --- SETTINGS LOGIC ---
+        function openSettingsModal() {
+            document.getElementById('geminiApiKeyInput').value = localStorage.getItem('geminiApiKey') || '';
+            document.getElementById('googleClientIdInput').value = localStorage.getItem('googleClientId') || '';
+            document.getElementById('settingsMessage').classList.add('hidden');
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+
+        function closeSettingsModal() { document.getElementById('settingsModal').classList.add('hidden'); }
+
+        function saveSettings() {
+            const newClientId = document.getElementById('googleClientIdInput').value.trim();
+            localStorage.setItem('geminiApiKey', document.getElementById('geminiApiKeyInput').value.trim());
+            
+            // Dacă se schimbă Client ID-ul, reinițializăm logica de login
+            if (newClientId !== localStorage.getItem('googleClientId')) {
+                localStorage.setItem('googleClientId', newClientId);
+                initTokenClient(newClientId);
+            }
+            
+            const msgEl = document.getElementById('settingsMessage');
+            msgEl.innerText = "Setările au fost salvate cu succes!";
+            msgEl.classList.remove('hidden');
+            msgEl.classList.add('text-green-600');
+            
+            setTimeout(() => closeSettingsModal(), 1500);
+        }
+        
+        // --- ADD MODAL LOGIC ---
+        function openModal() { 
+            document.getElementById('addModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('modalContent').classList.remove('translate-y-full'), 10);
+        }
+        function closeModal() {
+            document.getElementById('modalContent').classList.add('translate-y-full');
+            setTimeout(() => document.getElementById('addModal').classList.add('hidden'), 300);
+        }
+    </script>
+</body>
+</html>
