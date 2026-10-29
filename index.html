@@ -286,8 +286,13 @@
         }
 
         function schimbaTab(tab) {
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            event.currentTarget.classList.add('active');
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+                // Adăugăm clasa 'active' doar pe butonul corespunzător tab-ului selectat
+                if(btn.getAttribute('onclick').includes(tab)) {
+                    btn.classList.add('active');
+                }
+            });
             
             const content = document.getElementById('main-content');
             const persoana = appData.inregistrari[appData.profilActiv];
